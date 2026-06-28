@@ -17,6 +17,7 @@ enum Role {
   ORGANIZER
   ADMIN
 }
+
 enum EventStatus {
   DRAFT
   PUBLISHED
@@ -31,11 +32,60 @@ enum BookingStatus {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique
-  password String
-  role Role @default(USER)
+  id              Int       @id @default(autoincrement())
+  name            String
+  email           String    @unique
+  password        String
+  role            Role      @default(USER)
+  organizedEvents Event[]
+  bookings        Booking[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Event {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String
+  price       Float
+  startTime   DateTime
+  endTime     DateTime
+  venueId     Int
+  venue       Venue       @relation(fields: [venueId], references: [id])
+  organizerId Int
+  organizer   User        @relation(fields: [organizerId], references: [id])
+  status      EventStatus
+  bookings    Booking[]
+  bannerUrl   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([venueId])
+  @@index([organizerId])
+}
+
+model Venue {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  capacity  Int
+  events    Event[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id          Int           @id @default(autoincrement())
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id])
+  eventId     Int
+  event       Event         @relation(fields: [eventId], references: [id])
+  status      BookingStatus
+  totalAmount Float
+  quantity    Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([eventId])
 }
