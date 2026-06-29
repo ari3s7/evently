@@ -1,12 +1,9 @@
-import { Role } from "../generated/prisma";
+import type{ AuthPayload } from "./auth.types";
 
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id: number;
-                role: Role
-            };
+            user?: AuthPayload;
         }
     }
 }
