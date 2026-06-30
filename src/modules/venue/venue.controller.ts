@@ -134,4 +134,45 @@ export const updateVenue = async (req: Request, res: Response) => {
     });
   }
 
+};
+
+export const deleteVenue = async (req: Request, res: Response) => {
+    try {
+    const idResult = venueIdSchema.safeParse(req.params);
+
+     if(!idResult.success) {
+        return res.status(400).json ({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const { id } = idResult.data;
+
+    const existingVenue = await prisma.venue.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingVenue) {
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+    }
+    const venue = await prisma.venue.delete({
+        where: {
+            id,
+        }
+    })
+    return res.status(200).json({
+       success: true,
+       message: "Venue deleted successfully",
+});
+} catch(error) {
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+}
 }
