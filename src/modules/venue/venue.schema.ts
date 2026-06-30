@@ -7,3 +7,10 @@ export const venueSchema = z.object({
 });
 
 export const updateVenueSchema = venueSchema.partial();
+
+export const venueIdSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive("Venue ID must be positive"),
+});
