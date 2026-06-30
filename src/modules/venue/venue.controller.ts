@@ -1,5 +1,5 @@
 import type{ Request, Response } from "express"
-import { venueSchema, venueIdSchema } from "./venue.schema"
+import { venueSchema, venueIdSchema, updateVenueSchema } from "./venue.schema"
 import { prisma } from "../../config/prisma";
 
 export const createVenue = async (req: Request, res: Response) => {
@@ -80,4 +80,58 @@ export const getVenueById = async (req: Request, res: Response) => {
             message: "Internal Server error"
         });
     }
+};
+
+export const updateVenue = async (req: Request, res: Response) => {
+    try {
+    const idResult = venueIdSchema.safeParse(req.params);
+
+    if(!idResult.success) {
+        return res.status(400).json ({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const {id} = idResult.data;
+
+    const bodyResult = updateVenueSchema.safeParse(req.body);
+
+    if(!bodyResult.success){
+         return res.status(400).json ({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const existingVenue = await prisma.venue.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingVenue) {
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+    }
+
+    const venue = await prisma.venue.update({
+        where: {
+            id,
+        },
+        data: bodyResult.data,
+    })
+     return res.status(200).json({
+      success: true,
+      data: venue,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+
 }
