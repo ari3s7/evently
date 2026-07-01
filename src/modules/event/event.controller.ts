@@ -5,7 +5,8 @@ import { EventStatus } from '../../generated/prisma/enums';
 
 
 export const createEvent = async (req: Request, res: Response) => {
-    const resultEvent = eventSchema.safeParse(req.body);
+    try {
+        const resultEvent = eventSchema.safeParse(req.body);
 
     if(!resultEvent.success) {
         return res.status(400).json({
@@ -45,5 +46,36 @@ export const createEvent = async (req: Request, res: Response) => {
     return res.status(201).json({
      success: true,
      data: event,
-   });  
+   });  } catch (error) {
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+   }
+  }
+
+  export const getEvents = async (req: Request, res: Response) => {
+    try{
+    const events = await prisma.event.findMany({
+        include: {
+            venue: true,
+            organizer :{
+                select: {
+                    id: true,
+                    name: true,
+                }
+            }
+        }
+    });
+
+    return res.status(200).json({
+        success: true,
+        data: events
+    })
+         } catch(error){
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
   }
