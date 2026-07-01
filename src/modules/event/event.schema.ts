@@ -8,4 +8,13 @@ export const eventSchema = z.object({
     endTime: z.iso.datetime(),
     venueId: z.number(),
     bannerUrl: z.url().optional(),
- })
+ });
+
+ export const eventIdSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive("Event ID must be positive"),
+});
+
+export const updateEventSchema = eventSchema.partial()
