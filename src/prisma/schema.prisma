@@ -54,7 +54,7 @@ model Event {
   venue       Venue       @relation(fields: [venueId], references: [id])
   organizerId Int
   organizer   User        @relation(fields: [organizerId], references: [id])
-  status      EventStatus
+  status      EventStatus @default(DRAFT)
   bookings    Booking[]
   bannerUrl   String?
   createdAt   DateTime    @default(now())
