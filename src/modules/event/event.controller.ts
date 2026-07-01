@@ -1,7 +1,6 @@
 import type{Request, Response} from 'express';
-import { eventSchema } from './event.schema';
+import { eventIdSchema, eventSchema, updateEventSchema } from './event.schema';
 import { prisma } from "../../config/prisma";
-import { EventStatus } from '../../generated/prisma/enums';
 
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -79,3 +78,98 @@ export const createEvent = async (req: Request, res: Response) => {
         });
     }
   }
+
+  export const getEventById = async(req: Request, res: Response) => {
+    try {
+    const resultId = eventIdSchema.safeParse(req.params);
+
+    if(!resultId.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const { id } = resultId.data;
+    const event = await prisma.event.findUnique({
+        where: {
+            id,
+        }, 
+        include : {
+            venue: true,
+            organizer: {
+             select:{
+                id: true,
+                name: true
+             }
+            }
+        }
+    })
+    if(!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found"
+      })  
+    }
+    return res.status(200).json({
+        success: true,
+        data: event
+    })
+  } catch (error) {
+    return res.status(500).json({
+        success:  false,
+        message: "Internal Server Error"
+    });
+  }
+}
+
+export const updateEvent = async(req: Request, res: Response) => {
+    try {
+    const idResult = eventIdSchema.safeParse(req.params);
+    if(!idResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const { id } = idResult.data;
+
+    const eventResult = updateEventSchema.safeParse(req.body);
+
+    if(!eventResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field Error"
+        });
+    } 
+    
+    const existingEvent = await prisma.event.findUnique ({
+        where: {
+            id,
+        }
+    })
+
+    if(!existingEvent) {
+        return res.status(404).json({
+            success: false,
+            message: "Event not found"
+        })
+    }
+
+    const event = await prisma.event.update({
+        where: {
+            id
+        },
+        data: eventResult.data,
+    })
+
+    return res.status(200).json ({
+        success: true,
+        data: event,
+    })
+ } catch(error) {
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+ }
+}
