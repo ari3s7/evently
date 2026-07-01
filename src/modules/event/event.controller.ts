@@ -173,3 +173,42 @@ export const updateEvent = async(req: Request, res: Response) => {
     });
  }
 }
+
+export const deleteEvent = async (req: Request, res: Response) => {
+    try {
+    const idResult = eventIdSchema.safeParse(req.params);
+
+    if(!idResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field error"
+        });
+    }
+    const { id } = idResult.data;
+    const event = await prisma.event.findUnique({
+        where: {
+            id,
+        }
+    });
+    if(!event) {
+        return res.status(404).json({
+            success: false,
+            message: "Event not found"
+        });
+    }
+    await prisma.event.delete( {
+        where: {
+            id
+        }
+    })
+    return res.status(200).json({
+        success: true,
+        message: "Event deleted successfully"
+    });
+  } catch(error){ 
+       return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+       });
+  }
+};
