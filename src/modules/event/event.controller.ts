@@ -1,6 +1,7 @@
 import type{Request, Response} from 'express';
 import { eventIdSchema, eventSchema, updateEventSchema } from './event.schema';
 import { prisma } from "../../config/prisma";
+import { Role } from "../../generated/prisma/enums"
 
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -155,6 +156,13 @@ export const updateEvent = async(req: Request, res: Response) => {
         })
     }
 
+    if(req.user!.role !== Role.ADMIN && existingEvent.organizerId !== req.user!.id) {
+        return res.status(403).json ({
+            success: false,
+            message: "Forbidden"
+        });
+    }
+
     const event = await prisma.event.update({
         where: {
             id
@@ -185,17 +193,25 @@ export const deleteEvent = async (req: Request, res: Response) => {
         });
     }
     const { id } = idResult.data;
-    const event = await prisma.event.findUnique({
+    const existingEvent = await prisma.event.findUnique({
         where: {
             id,
         }
     });
-    if(!event) {
+    if(!existingEvent) {
         return res.status(404).json({
             success: false,
             message: "Event not found"
         });
     }
+
+     if(req.user!.role !== Role.ADMIN && existingEvent.organizerId !== req.user!.id) {
+        return res.status(403).json ({
+            success: false,
+            message: "Forbidden"
+        });
+    }
+
     await prisma.event.delete( {
         where: {
             id
