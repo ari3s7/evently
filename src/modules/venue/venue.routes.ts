@@ -6,10 +6,10 @@ import { Role } from "../../generated/prisma/enums"
 
 const router = Router();
 
-router.post("/",authenticate, authorize(Role.ADMIN), createVenue);
+router.post("/",authenticate, authorize(Role.ADMIN, Role.ORGANIZER), createVenue);
 router.get("/", getAllVenues);
 router.get("/:id", getVenueById);
-router.put("/:id", authenticate, authorize(Role.ADMIN), updateVenue);
-router.delete("/:id", authenticate, authorize(Role.ADMIN), deleteVenue);
+router.put("/:id", authenticate, authorize(Role.ADMIN, Role.ORGANIZER), updateVenue);
+router.delete("/:id", authenticate, authorize(Role.ADMIN, Role.ORGANIZER), deleteVenue);
 
 export default router;
