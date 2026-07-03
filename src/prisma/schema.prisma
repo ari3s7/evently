@@ -80,7 +80,7 @@ model Booking {
   user        User          @relation(fields: [userId], references: [id])
   eventId     Int
   event       Event         @relation(fields: [eventId], references: [id])
-  status      BookingStatus
+  status      BookingStatus @default(CONFIRMED)
   totalAmount Float
   quantity    Int
   createdAt   DateTime      @default(now())
