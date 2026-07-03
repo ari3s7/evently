@@ -1,11 +1,14 @@
 import Router from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
-import { createBooking, myBookings } from "../booking/booking.controller"
+import { createBooking, myBookings, getBookings } from "../booking/booking.controller"
+import { authorize } from '../../middleware/authorize.middleware';
+import { Role } from '../../generated/prisma/enums';
 
 const router = Router();
 
 
 router.post("/", authenticate, createBooking);
 router.get("/me", authenticate, myBookings);
+router.get("/", authenticate, authorize(Role.ADMIN), getBookings);
 
 export default router;

@@ -72,3 +72,35 @@ export const myBookings = async (req: Request, res: Response) => {
     });
   }
 }
+export const getBookings = async (req: Request, res: Response) => {
+    try {
+    const bookings = await prisma.booking.findMany({
+          include: {
+            user: {
+                select: {
+                id: true,
+                name: true,
+                email: true,
+                },
+            },
+            event: {
+                select: {
+                    id: true,
+                    title: true,
+                    startTime: true,
+                }
+            }
+          }
+    }) 
+
+    return res.status(200).json ({
+        success: true,
+        data: bookings
+    });
+ } catch(error) {
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+ } 
+}
