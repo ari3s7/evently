@@ -1,6 +1,7 @@
 import type{Request, Response} from "express";
-import { bookingSchema } from "./booking.schema";
+import { bookingIdSchema, bookingSchema } from "./booking.schema";
 import { prisma } from "../../config/prisma";
+import { Role } from "../../generated/prisma/enums";
 
 export const createBooking = async (req: Request, res: Response) => {
     try {
@@ -110,4 +111,66 @@ export const getBookings = async (req: Request, res: Response) => {
         message: "Internal Server Error"
     });
  } 
+}
+
+export const getBookingById = async (req: Request, res: Response) => {
+    try {
+    const bookingIdResult = bookingIdSchema.safeParse(req.params);
+
+    if(!bookingIdResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field Error"
+        });
+    }
+    const { id } = bookingIdResult.data;
+
+    const booking = await prisma.booking.findUnique({
+        where: {
+            id,
+        }
+    })
+    if (!booking) {
+        return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+  });
+}
+    if(req.user!.role !== Role.ADMIN && booking.userId !== req.user!.id) {
+        return res.status(403).json({
+            success: false,
+            message: "Forbidden"
+        })
+    }
+    const getBooking = await prisma.booking.findUnique({
+        where: {
+            id,
+        }, include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            event: {
+                select: {
+                    id: true,
+                    title: true,
+                    startTime: true,
+                    bannerUrl: true,
+                }
+            }
+        }
+    })
+    return res.status(200).json({
+        success: true,
+        data: getBooking
+    });
+  } catch(error){
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server error"
+    });
+  }
 }
