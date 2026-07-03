@@ -174,3 +174,53 @@ export const getBookingById = async (req: Request, res: Response) => {
     });
   }
 }
+
+export const deleteBooking = async(req: Request, res: Response) => {
+    try {
+    const idResult = bookingIdSchema.safeParse(req.params);
+
+    if(!idResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Field Error"
+        });
+    }
+
+    const { id } = idResult.data;
+
+    const booking = await prisma.booking.findUnique({
+        where: {
+            id,
+        }
+    })
+    if(!booking) {
+        return res.status(404).json({
+            success: false,
+            message: "Booking not found"
+        });
+    }
+    
+    if(req.user!.role !== Role.ADMIN && booking.userId !== req.user!.id) {
+        return res.status(403).json ({
+            success: false,
+            message: "Forbidden"
+        });
+    }
+
+    await prisma.booking.delete({
+        where: {
+            id,
+        }
+    })
+
+    return res.status(200).json({
+        success: true,
+        message: "Booking Deleted successfully"
+    }); 
+   } catch(error) {
+    return res.status(500).json({
+        success: true,
+        message: "Internal Server Error"
+    });
+ }
+}
