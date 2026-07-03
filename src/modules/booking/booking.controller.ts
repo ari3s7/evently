@@ -44,3 +44,31 @@ export const createBooking = async (req: Request, res: Response) => {
     })
    }
 }
+export const myBookings = async (req: Request, res: Response) => {
+    try {
+    const bookings = await prisma.booking.findMany({
+        where: {
+            userId: req.user!.id,
+        },
+        include: {
+            event: {
+                select: {
+                    id: true,
+                    title: true,
+                    startTime: true,
+                    banneUrl: true,
+                }
+            }
+        }
+    })
+    return res.status(200).json({
+        success: true,
+        data: bookings
+    })
+  } catch(error) {
+    return res.status(500).json ({
+        success:false,
+        message: "Internal Server error"
+    });
+  }
+}
