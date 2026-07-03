@@ -88,6 +88,13 @@ export const getBookings = async (req: Request, res: Response) => {
                     id: true,
                     title: true,
                     startTime: true,
+                },
+                booking: {
+                    id: true,
+                    quantity: true,
+                    totalAmount: true,
+                    status: true,
+                    createdAt: true
                 }
             }
           }
