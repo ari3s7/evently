@@ -7,3 +7,10 @@ export const bookingSchema = z.object({
     .positive("Event ID must be positive"),
     quantity: z.number(),
 })
+
+export const bookingIdSchema = z.object({
+    id: z.coerce
+    .number()
+    .int()
+    .positive("Booking ID must be positive"),
+})
