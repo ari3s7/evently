@@ -1,7 +1,7 @@
 import type{Request, Response} from "express";
 import { bookingIdSchema, bookingSchema } from "./booking.schema";
 import { prisma } from "../../config/prisma";
-import { EventStatus, Role } from "../../generated/prisma/enums";
+import { BookingStatus, EventStatus, Role } from "../../generated/prisma/enums";
 
 export const createBooking = async (req: Request, res: Response) => {
     try {
@@ -32,12 +32,46 @@ export const createBooking = async (req: Request, res: Response) => {
         message: "Event is not available for booking"
        });
     }
+
+    const venue = await prisma.venue.findUnique({
+        where: {
+            id: event.venueId,
+        },
+    })
+
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found",
+  });
+}
+
+    const bookedSeats = await prisma.booking.aggregate({
+        where: {
+            eventId,
+            status: BookingStatus.CONFIRMED,
+        },
+        _sum: {
+            quantity: true,
+        }
+    })
+
+    const totalBookedSeats = bookedSeats._sum.quantity ?? 0;
+
+    const availableSeats = venue.capacity - totalBookedSeats;
+
+    if(quantity > availableSeats) {
+        return res.status(400).json({
+            success: false,
+            message: "Not enough seats available",
+        })
+    }
     
     const booking = await prisma.booking.create({
        data: {
         quantity,
         userId: req.user!.id,
-        eventId,
+        eventId: event.id,
         totalAmount: event.price * quantity,
        }
     });
@@ -53,6 +87,7 @@ export const createBooking = async (req: Request, res: Response) => {
     })
    }
 }
+
 export const myBookings = async (req: Request, res: Response) => {
     try {
     const bookings = await prisma.booking.findMany({
