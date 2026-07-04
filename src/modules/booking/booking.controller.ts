@@ -1,7 +1,7 @@
 import type{Request, Response} from "express";
 import { bookingIdSchema, bookingSchema } from "./booking.schema";
 import { prisma } from "../../config/prisma";
-import { Role } from "../../generated/prisma/enums";
+import { EventStatus, Role } from "../../generated/prisma/enums";
 
 export const createBooking = async (req: Request, res: Response) => {
     try {
@@ -25,6 +25,14 @@ export const createBooking = async (req: Request, res: Response) => {
             message: "Event not found"
         });
     }
+
+    if(event.status !== EventStatus.PUBLISHED) {
+       return res.status(400).json({
+        success: false,
+        message: "Event is not available for booking"
+       });
+    }
+    
     const booking = await prisma.booking.create({
        data: {
         quantity,
