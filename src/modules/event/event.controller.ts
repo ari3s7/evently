@@ -90,6 +90,8 @@ export const createEvent = async (req: Request, res: Response) => {
         limit,
         total,
         totalPages: Math.ceil(total/limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPreviousPage: page > 1,
         data: events
     })
          } catch(error){
