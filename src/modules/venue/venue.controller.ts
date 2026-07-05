@@ -1,6 +1,7 @@
 import type{ Request, Response } from "express"
 import { venueSchema, venueIdSchema, updateVenueSchema } from "./venue.schema"
 import { prisma } from "../../config/prisma";
+import { paginationSchema } from "../../common/pagination.schema";
 
 export const createVenue = async (req: Request, res: Response) => {
     try {
@@ -34,11 +35,33 @@ export const createVenue = async (req: Request, res: Response) => {
 
 export const getAllVenues = async (req: Request,res: Response) => {
     try {
-        const venues = await prisma.venue.findMany();
+        const paginationResult = paginationSchema.safeParse(req.query);
 
-   return res.status(200).json({
-    success: true,
-    data: venues
+        if(!paginationResult.success){
+            return res.status(400).json({
+                success: false,
+                message: "Invalid pagination parameters"
+            })
+        }
+
+        const {page, limit} = paginationResult.data;
+        const skip = (page-1)*limit;
+        const venues = await prisma.venue.findMany({
+            skip,
+            take: limit,
+        });
+
+        const total = await prisma.venue.count();
+        const totalPages = Math.ceil(total / limit);
+        return res.status(200).json({
+           success: true,
+           currentPage: page,
+           limit,
+           total,
+           totalPages,
+           hasNextPage: page < totalPages,
+           hasPreviousPage: page > 1,
+           data: venues
    })
     } catch (error) {
         return res.status(500).json({
