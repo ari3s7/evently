@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { updateRoleSchema, userIdSchema } from "./user.schema";
 import { prisma } from "../../config/prisma";
+import { paginationSchema } from "../../common/pagination.schema";
 
 export const getMe = async(req: Request, res: Response) => {
     try {
@@ -37,11 +38,40 @@ export const getMe = async(req: Request, res: Response) => {
 
 export const getAll = async (req: Request, res: Response) =>{
     try {
-    const user = await prisma.user.findMany();
+    const paginationResult = paginationSchema.safeParse(req.query);
+        
+        if(!paginationResult.success){
+            return res.status(400).json({
+                success: false,
+                message: "Invalid pagination parameters"
+             })
+        }
+        
+    const {page, limit} = paginationResult.data;
+    const skip = (page-1)*limit;
+    const total = await prisma.user.count();
+    const totalPages = Math.ceil(total / limit);
+    const users = await prisma.user.findMany({
+        skip,
+        take: limit,
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+        },
+    });
 
     return res.status(200).json({
         success: true,
-        data: user
+        currentPage: page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+        data: users,
     })
    } catch(error){
     return res.status(500).json({
