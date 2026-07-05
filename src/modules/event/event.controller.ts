@@ -2,6 +2,7 @@ import type{Request, Response} from 'express';
 import { eventIdSchema, eventSchema, updateEventSchema } from './event.schema';
 import { prisma } from "../../config/prisma";
 import { Role } from "../../generated/prisma/enums"
+import { paginationSchema } from '../../common/pagination.schema';
 
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -56,7 +57,21 @@ export const createEvent = async (req: Request, res: Response) => {
 
   export const getEvents = async (req: Request, res: Response) => {
     try{
+    const paginationResult =  paginationSchema.safeParse(req.query);
+
+    if(!paginationResult.success) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid pagination parameters",
+        })
+    }
+
+    const {page, limit} = paginationResult.data;
+
+    const skip = (page-1)*limit;
     const events = await prisma.event.findMany({
+        skip,
+        take: limit,
         include: {
             venue: true,
             organizer :{
@@ -67,9 +82,14 @@ export const createEvent = async (req: Request, res: Response) => {
             }
         }
     });
+    const total = await prisma.event.count();
 
     return res.status(200).json({
         success: true,
+        currentPage: page,
+        limit,
+        total,
+        totalPages: Math.ceil(total/limit),
         data: events
     })
          } catch(error){
