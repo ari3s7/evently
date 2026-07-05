@@ -2,9 +2,10 @@ import type{Request, Response} from "express";
 import { bookingIdSchema, bookingSchema } from "./booking.schema";
 import { prisma } from "../../config/prisma";
 import { BookingStatus, EventStatus, Role } from "../../generated/prisma/enums";
+import { paginationSchema } from "../../common/pagination.schema";
 
 export const createBooking = async (req: Request, res: Response) => {
-    try {
+    try {  
     const bookingResult = bookingSchema.safeParse(req.body);
     if(!bookingResult.success) {
         return res.status(400).json({
@@ -13,7 +14,7 @@ export const createBooking = async (req: Request, res: Response) => {
         });
     }
     const { eventId, quantity } = bookingResult.data;
-
+ 
     const event = await prisma.event.findUnique({
         where: {
             id: eventId,
@@ -25,14 +26,12 @@ export const createBooking = async (req: Request, res: Response) => {
             message: "Event not found"
         });
     }
-
     if(event.status !== EventStatus.PUBLISHED) {
        return res.status(400).json({
         success: false,
         message: "Event is not available for booking"
        });
     }
-
     const venue = await prisma.venue.findUnique({
         where: {
             id: event.venueId,
@@ -80,7 +79,8 @@ export const createBooking = async (req: Request, res: Response) => {
         success: true,
         data: booking
     });
-} catch(error) {
+} 
+catch(error) {
     return res.status(500).json({
         success: false,
         message: "Internal Server error"
@@ -90,7 +90,22 @@ export const createBooking = async (req: Request, res: Response) => {
 
 export const myBookings = async (req: Request, res: Response) => {
     try {
+    const paginationResult = paginationSchema.safeParse(req.query);
+            
+    if(!paginationResult.success){
+        return res.status(400).json({
+            success: false,
+            message: "Invalid pagination parameters"
+        })
+    }
+            
+    const {page, limit} = paginationResult.data;
+    const skip = (page-1)*limit;
+    const total = await prisma.booking.count();
+    const totalPages = Math.ceil(total / limit);
     const bookings = await prisma.booking.findMany({
+        skip,
+        take: limit,
         where: {
             userId: req.user!.id,
         },
@@ -107,6 +122,12 @@ export const myBookings = async (req: Request, res: Response) => {
     })
     return res.status(200).json({
         success: true,
+        currentPage: page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
         data: bookings
     })
   } catch(error) {
@@ -118,7 +139,22 @@ export const myBookings = async (req: Request, res: Response) => {
 }
 export const getBookings = async (req: Request, res: Response) => {
     try {
+    const paginationResult = paginationSchema.safeParse(req.query);
+            
+    if(!paginationResult.success){
+        return res.status(400).json({
+            success: false,
+            message: "Invalid pagination parameters"
+        })
+    }
+            
+    const {page, limit} = paginationResult.data;
+    const skip = (page-1)*limit;
+    const total = await prisma.booking.count();
+    const totalPages = Math.ceil(total / limit);
     const bookings = await prisma.booking.findMany({
+        skip,
+        take: limit,
           include: {
             user: {
                 select: {
@@ -146,6 +182,12 @@ export const getBookings = async (req: Request, res: Response) => {
 
     return res.status(200).json ({
         success: true,
+        currentPage: page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
         data: bookings
     });
  } catch(error) {
