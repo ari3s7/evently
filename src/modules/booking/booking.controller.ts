@@ -161,11 +161,23 @@ export const getBookings = async (req: Request, res: Response) => {
             
     const {page, limit} = paginationResult.data;
     const skip = (page-1)*limit;
+
+    const sortingResult = bookingSortSchema.safeParse(req.query);
+        if(!sortingResult.success){
+            return res.status(400).json({
+                success: false,
+                message: "Invalid sorting parameters"
+            })
+        }
+    const { sortBy, order } = sortingResult.data;
     const total = await prisma.booking.count();
     const totalPages = Math.ceil(total / limit);
     const bookings = await prisma.booking.findMany({
         skip,
         take: limit,
+        orderBy: {
+            [sortBy]: order
+        },
           include: {
             user: {
                 select: {
