@@ -1,5 +1,5 @@
 import type{ Request, Response } from "express"
-import { venueSchema, venueIdSchema, updateVenueSchema } from "./venue.schema"
+import { venueSchema, venueIdSchema, updateVenueSchema, venueSortSchema } from "./venue.schema"
 import { prisma } from "../../config/prisma";
 import { paginationSchema } from "../../common/pagination.schema";
 
@@ -46,9 +46,22 @@ export const getAllVenues = async (req: Request,res: Response) => {
 
         const {page, limit} = paginationResult.data;
         const skip = (page-1)*limit;
+
+        const sortingResult = venueSortSchema.safeParse(req.query);
+            if(!sortingResult.success){
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid sorting parameters"
+                })
+            }
+        
+        const { sortBy, order } = sortingResult.data; 
         const venues = await prisma.venue.findMany({
             skip,
             take: limit,
+            orderBy: {
+                [sortBy]: order
+            },
         });
 
         const total = await prisma.venue.count();
