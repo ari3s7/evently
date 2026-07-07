@@ -14,3 +14,13 @@ export const bookingIdSchema = z.object({
     .int()
     .positive("Booking ID must be positive"),
 })
+
+export const bookingSortSchema = z.object({
+    sortBy: z.enum([
+        "createdAt",
+        "totalAmount",
+        "status",
+    ]).default("createdAt"),
+
+    order: z.enum(["asc", "desc"]).default("desc"),
+})
