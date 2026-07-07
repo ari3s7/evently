@@ -17,4 +17,9 @@ export const eventSchema = z.object({
     .positive("Event ID must be positive"),
 });
 
+export const eventSortingSchema = z.object ({
+    sortBy: z.enum(['title', 'price', 'startTime', 'createdAt']).default('createdAt'),
+    order: z.enum(["asc", "desc"]).default("desc"),
+})
+
 export const updateEventSchema = eventSchema.partial()
