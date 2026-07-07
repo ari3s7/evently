@@ -3,6 +3,7 @@ import { eventIdSchema, eventSchema, updateEventSchema } from './event.schema';
 import { prisma } from "../../config/prisma";
 import { Role } from "../../generated/prisma/enums"
 import { paginationSchema } from '../../common/pagination.schema';
+import { eventSortingSchema } from './event.schema';
 
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -69,9 +70,21 @@ export const createEvent = async (req: Request, res: Response) => {
     const {page, limit} = paginationResult.data;
 
     const skip = (page-1)*limit;
+
+    const sortingResult = eventSortingSchema.safeParse(req.query);
+    if(!sortingResult.success){
+        return res.status(400).json({
+            success: false,
+            message: "Invalid sorting parameters"
+        })
+    }
+    const { sortBy, order } = sortingResult.data;
     const events = await prisma.event.findMany({
         skip,
         take: limit,
+        orderBy: {
+            [sortBy]: order,
+        },
         include: {
             venue: true,
             organizer :{
