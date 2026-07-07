@@ -14,3 +14,13 @@ export const venueIdSchema = z.object({
     .int()
     .positive("Venue ID must be positive"),
 });
+
+export const venueSortSchema = z.object({
+  sortBy: z.enum([
+    "name",
+    "capacity",
+    "createdAt",
+  ]).default("createdAt"),
+
+  order: z.enum(["asc", "desc"]).default("desc"),
+})
