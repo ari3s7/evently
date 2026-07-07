@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { updateRoleSchema, userIdSchema } from "./user.schema";
+import { updateRoleSchema, userIdSchema, userSortSchema } from "./user.schema";
 import { prisma } from "../../config/prisma";
 import { paginationSchema } from "../../common/pagination.schema";
 
@@ -46,7 +46,16 @@ export const getAll = async (req: Request, res: Response) =>{
                 message: "Invalid pagination parameters"
              })
         }
-        
+
+         const sortingResult = userSortSchema.safeParse(req.query);
+            if(!sortingResult.success){
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid sorting parameters"
+                })
+            }
+
+    const { sortBy, order } = sortingResult.data;    
     const {page, limit} = paginationResult.data;
     const skip = (page-1)*limit;
     const total = await prisma.user.count();
@@ -54,6 +63,9 @@ export const getAll = async (req: Request, res: Response) =>{
     const users = await prisma.user.findMany({
         skip,
         take: limit,
+        orderBy: {
+            [sortBy]: order
+        },
         select: {
             id: true,
             name: true,
