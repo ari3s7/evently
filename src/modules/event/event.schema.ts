@@ -22,4 +22,8 @@ export const eventSortingSchema = z.object ({
     order: z.enum(["asc", "desc"]).default("desc"),
 })
 
-export const updateEventSchema = eventSchema.partial()
+export const updateEventSchema = eventSchema.partial();
+
+export const eventSearchSchema = z.object({
+    search: z.string().trim().optional()
+})
