@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationSchema } from '../../common/pagination.schema';
 
 export const venueSchema = z.object({
     name: z.string().trim().min(3, "Venue name must be at least 3 characters").max(100, "Venue name cannot exceed 100 characters"),
@@ -23,4 +24,14 @@ export const venueSortSchema = z.object({
   ]).default("createdAt"),
 
   order: z.enum(["asc", "desc"]).default("desc"),
+})
+
+export const venueSearchSchema = z.object({
+  search: z.string().trim().min(1).optional(),
+})
+
+export const venueQuerySchema = z.object({
+  ...paginationSchema.shape,
+  ...venueSortSchema.shape,
+  ...venueSearchSchema.shape,
 })
