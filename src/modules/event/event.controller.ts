@@ -1,9 +1,9 @@
 import type{Request, Response} from 'express';
-import { eventIdSchema, eventSchema, updateEventSchema } from './event.schema';
+import { eventIdSchema, eventQuerySchema, eventSchema, updateEventSchema } from './event.schema';
 import { prisma } from "../../config/prisma";
 import { Role } from "../../generated/prisma/enums"
-import { paginationSchema } from '../../common/pagination.schema';
-import { eventSortingSchema } from './event.schema';
+
+import type { Prisma } from '../../generated/prisma/client';
 
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -58,28 +58,39 @@ export const createEvent = async (req: Request, res: Response) => {
 
   export const getEvents = async (req: Request, res: Response) => {
     try{
-    const paginationResult =  paginationSchema.safeParse(req.query);
+   
+    const queryResult = eventQuerySchema.safeParse(req.query);
 
-    if(!paginationResult.success) {
+    if(!queryResult.success) {
         return res.status(400).json({
             success: false,
-            message: "Invalid pagination parameters",
-        })
+            message: "Invalid query parameters"
+        });
     }
 
-    const {page, limit} = paginationResult.data;
+    const { page, limit, sortBy, order, search, status, venueId, organizerId } = queryResult.data;
+    
+    const where: Prisma.EventWhereInput = {}
+    if(search) {
+        where.title = {
+            contains: search,
+            mode: "insensitive",
+        };
+    }
+    if(status) {
+        where.status = status;
+    }
+    if(venueId) {
+        where.venueId = venueId;
+    }
 
+    if(organizerId) {
+        where.organizerId = organizerId;
+    }
+    
     const skip = (page-1)*limit;
-
-    const sortingResult = eventSortingSchema.safeParse(req.query);
-    if(!sortingResult.success){
-        return res.status(400).json({
-            success: false,
-            message: "Invalid sorting parameters"
-        })
-    }
-    const { sortBy, order } = sortingResult.data;
     const events = await prisma.event.findMany({
+        where,
         skip,
         take: limit,
         orderBy: {
@@ -95,7 +106,9 @@ export const createEvent = async (req: Request, res: Response) => {
             }
         }
     });
-    const total = await prisma.event.count();
+    const total = await prisma.event.count({
+        where,
+    });
 
     return res.status(200).json({
         success: true,
