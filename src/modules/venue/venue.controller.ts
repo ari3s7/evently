@@ -1,7 +1,8 @@
 import type{ Request, Response } from "express"
-import { venueSchema, venueIdSchema, updateVenueSchema, venueSortSchema } from "./venue.schema"
+import { venueSchema, venueIdSchema, updateVenueSchema, venueSortSchema, venueQuerySchema } from "./venue.schema"
 import { prisma } from "../../config/prisma";
 import { paginationSchema } from "../../common/pagination.schema";
+import type { Prisma } from "../../generated/prisma/client";
 
 export const createVenue = async (req: Request, res: Response) => {
     try {
@@ -35,28 +36,27 @@ export const createVenue = async (req: Request, res: Response) => {
 
 export const getAllVenues = async (req: Request,res: Response) => {
     try {
-        const paginationResult = paginationSchema.safeParse(req.query);
+        const queryResult = venueQuerySchema.safeParse(req.query);
 
-        if(!paginationResult.success){
+           if(!queryResult.success) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid pagination parameters"
-            })
-        }
-
-        const {page, limit} = paginationResult.data;
+                message: "Invalid query parameters"
+            });
+           }
+        const { page, limit, sortBy, order, search} = queryResult.data;
         const skip = (page-1)*limit;
 
-        const sortingResult = venueSortSchema.safeParse(req.query);
-            if(!sortingResult.success){
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid sorting parameters"
-                })
+        const where: Prisma.VenueWhereInput = {};
+
+        if(search) [
+            where.name = {
+                contains: search,
+                mode: "insensitive",
             }
-        
-        const { sortBy, order } = sortingResult.data; 
+        ]
         const venues = await prisma.venue.findMany({
+            where,
             skip,
             take: limit,
             orderBy: {
@@ -64,7 +64,9 @@ export const getAllVenues = async (req: Request,res: Response) => {
             },
         });
 
-        const total = await prisma.venue.count();
+        const total = await prisma.venue.count({
+            where,
+        });
         const totalPages = Math.ceil(total / limit);
         return res.status(200).json({
            success: true,
