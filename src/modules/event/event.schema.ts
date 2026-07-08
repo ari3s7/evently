@@ -1,4 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
+import { EventStatus } from "../../generated/prisma/enums";
+import { paginationSchema } from "../../common/pagination.schema";
+import { eventSortingSchema } from "../../common/sorting.schema";
 
 export const eventSchema = z.object({
     title: z.string().trim().min(3, "Title must be at least 3 characters").max(100, "Title cannot exceed 100 characters"),
@@ -17,13 +20,22 @@ export const eventSchema = z.object({
     .positive("Event ID must be positive"),
 });
 
-export const eventSortingSchema = z.object ({
-    sortBy: z.enum(['title', 'price', 'startTime', 'createdAt']).default('createdAt'),
-    order: z.enum(["asc", "desc"]).default("desc"),
-})
-
 export const updateEventSchema = eventSchema.partial();
 
 export const eventSearchSchema = z.object({
-    search: z.string().trim().optional()
+    search: z.string().trim().min(1).optional(),
+});
+
+export const eventFilterSchema = z.object({
+  status: z.enum(EventStatus).optional(),
+  venueId: z.coerce.number().int().positive().optional(),
+  organizerId: z.coerce.number().int().positive().optional(),
+});
+
+export const eventQuerySchema = z.object({
+    ...paginationSchema.shape,
+    ...eventSortingSchema.shape,
+    ...eventSearchSchema.shape,
+    ...eventFilterSchema.shape,
 })
+   
