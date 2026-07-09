@@ -1,8 +1,9 @@
 import type{Request, Response} from "express";
-import { bookingIdSchema, bookingSchema, bookingSortSchema } from "./booking.schema";
+import { bookingIdSchema, bookingSchema, bookingSortSchema, bookQuerySchema } from "./booking.schema";
 import { prisma } from "../../config/prisma";
 import { BookingStatus, EventStatus, Role } from "../../generated/prisma/enums";
 import { paginationSchema } from "../../common/pagination.schema";
+import type { Prisma } from "../../generated/prisma/client";
 
 export const createBooking = async (req: Request, res: Response) => {
     try {  
@@ -150,29 +151,36 @@ export const myBookings = async (req: Request, res: Response) => {
 }
 export const getBookings = async (req: Request, res: Response) => {
     try {
-    const paginationResult = paginationSchema.safeParse(req.query);
-            
-    if(!paginationResult.success){
+  
+    const queryResult = bookQuerySchema.safeParse(req.query);
+
+    if(!queryResult.success){
         return res.status(400).json({
             success: false,
-            message: "Invalid pagination parameters"
-        })
+            message: "Invalid query parameters",
+        });
     }
-            
-    const {page, limit} = paginationResult.data;
-    const skip = (page-1)*limit;
+   
+    const {page, limit, sortBy, order, status, eventId, userId} = queryResult.data;
 
-    const sortingResult = bookingSortSchema.safeParse(req.query);
-        if(!sortingResult.success){
-            return res.status(400).json({
-                success: false,
-                message: "Invalid sorting parameters"
-            })
-        }
-    const { sortBy, order } = sortingResult.data;
-    const total = await prisma.booking.count();
+    const where: Prisma.BookingWhereInput = {};
+
+    if(status){
+        where.status = status;
+    }
+    if(eventId) {
+        where.eventId = eventId;
+    }
+    if(userId) {
+        where.userId = userId;
+    }
+    const skip = (page-1)*limit;
+    const total = await prisma.booking.count({
+        where,
+    });
     const totalPages = Math.ceil(total / limit);
     const bookings = await prisma.booking.findMany({
+        where,
         skip,
         take: limit,
         orderBy: {
