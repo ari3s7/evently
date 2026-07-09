@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
-import { updateRoleSchema, userIdSchema, userSortSchema } from "./user.schema";
+import { updateRoleSchema, userIdSchema, userQuerySchema, userSortSchema } from "./user.schema";
 import { prisma } from "../../config/prisma";
 import { paginationSchema } from "../../common/pagination.schema";
+import type { Prisma } from "../../generated/prisma/client";
 
 export const getMe = async(req: Request, res: Response) => {
     try {
@@ -38,29 +39,44 @@ export const getMe = async(req: Request, res: Response) => {
 
 export const getAll = async (req: Request, res: Response) =>{
     try {
-    const paginationResult = paginationSchema.safeParse(req.query);
-        
-        if(!paginationResult.success){
+
+    const queryResult = userQuerySchema.safeParse(req.query);
+
+        if(!queryResult.success){
             return res.status(400).json({
                 success: false,
-                message: "Invalid pagination parameters"
-             })
+                message: "Invalid query parameters"
+            });
         }
+   
 
-         const sortingResult = userSortSchema.safeParse(req.query);
-            if(!sortingResult.success){
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid sorting parameters"
-                })
-            }
+    const {page, limit, sortBy, order, search, role }  = queryResult.data;
 
-    const { sortBy, order } = sortingResult.data;    
-    const {page, limit} = paginationResult.data;
+    const where: Prisma.UserWhereInput = {};
+
+    if(search) {
+        where.OR = [
+            {
+                name: {
+                   contains: search,
+                   mode: "insensitive",
+                },
+            },
+            {
+                email: {
+                    contains: search,
+                    mode: "insensitive"
+                },
+            },
+        ];
+    }
     const skip = (page-1)*limit;
-    const total = await prisma.user.count();
+    const total = await prisma.user.count({
+        where,
+    });
     const totalPages = Math.ceil(total / limit);
     const users = await prisma.user.findMany({
+        where,
         skip,
         take: limit,
         orderBy: {
