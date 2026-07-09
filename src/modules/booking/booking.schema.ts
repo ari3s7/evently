@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { BookingStatus } from '../../generated/prisma/enums';
+import { paginationSchema } from '../../common/pagination.schema';
 
 export const bookingSchema = z.object({
     eventId: z.coerce
@@ -23,4 +25,16 @@ export const bookingSortSchema = z.object({
     ]).default("createdAt"),
 
     order: z.enum(["asc", "desc"]).default("desc"),
+})
+
+export const bookFilterSchema = z.strictObject({
+    status: z.enum(BookingStatus).optional(),
+    eventId: z.coerce.number().int().positive().optional(),
+    userId: z.coerce.number().int().positive().optional(),
+})
+
+export const bookQuerySchema = z.object({
+    ...paginationSchema.shape,
+    ...bookingSortSchema.shape,
+    ...bookFilterSchema.shape,
 })
